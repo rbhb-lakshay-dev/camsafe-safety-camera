@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Person Detection with Coco SSD</title>
+    <style>
+      #videoElement {
+        width: 100%;
+        height: 95vh;
+        background-color: navy;
+      }
+      #alert {
+        display: none;
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: red;
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+        font-size: 18px;
+        z-index: 1000;
+      }
+    </style>
+  </head>
+  <body>
+    <video id="videoElement" autoplay></video>
+    <div id="alert">Person Detected!</div>
+    <audio id="alarmSound" src="alarm.mp3" preload="auto"></audio>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    <script>
+      async function setupCamera() {
+        const video = document.getElementById("videoElement");
+        //to access the user's webcam -->
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+        });
+        video.srcObject = stream;
+        return new Promise((resolve) => {
+          video.onloadedmetadata = () => {
+            resolve(video);
+          };
+        });
+      }
+
+      async function detectPerson(video, model) {
+        const predictions = await model.detect(video);
+        const personDetected = predictions.some(
+          (prediction) => prediction.class === "person"
+        );
+        const alertDiv = document.getElementById("alert");
+        const alarmSound = document.getElementById("alarmSound");
+
+        if (personDetected) {
+          alertDiv.style.display = "block";
+          alarmSound.play(); // Play alarm sound
+
+          // Show popup notification
+          //alert("Person Detected!");
+
+          // Optionally, you can trigger a vibration on mobile devices
+          if (navigator.vibrate) {
+            navigator.vibrate([200, 100, 200]);
+          }
+        } else {
+          alertDiv.style.display = "none";
+        }
+      }
+
+      async function main() {
+        const video = await setupCamera();
+        const model = await cocoSsd.load();
+        video.play();
+        setInterval(() => detectPerson(video, model), 1000);
+      }
+
+      main();
+    </script>
+  </body>
+</html>
